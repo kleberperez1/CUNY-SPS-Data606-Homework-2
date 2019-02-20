@@ -1,0 +1,363 @@
+
+---
+title: "DATA606 Homework 2"
+author: "[Kleber Perez - `r format(Sys.Date(), '%B %d, %Y')`](https://www.linkedin.com/in/kleberperez/)" 
+output: 
+  html_document:
+    code_folding: show
+---
+
+
+<style>
+.maroonColor {
+  color:#9f0a0a;
+}
+.greyColor {
+  color:#808080;
+}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#library(DT)
+#DT::datatable(smokinghabits, options = list(pageLength = 10))
+```
+
+# <span class="greyColor">Chapter 2 - Probability</span>
+
+## 2.6 Dice rolls
+
+> If you roll a pair of fair dice, what is the probability of: <br />
+  (a). getting a sum of 1? 
+  
+> Zero chance because the lowest value a dice can be is 1. -->  1 + 1 = 2.
+
+> (b). getting a sum of 5?    -->   2 + 3 = 5     -->     1 + 4 = 5
+
+> There are two combinations of these so there are 4 options in total.
+
+> 6 * 6 = 36 then
+
+```{r}
+round(4 / 36, 3)
+```
+
+> (c). getting a sum of 12?     
+
+> A 12 can be achived in by:    -->   6 + 6 = 12    -->   Therfore, the answer is 
+
+```{r}
+round(1/36, 3)
+```
+
+
+## 2.8 Poverty and language.
+
+> The American Community Survey is an ongoing survey that provides data every year to give communities the current
+  information they need to plan investments and services. The 2010 American Community Survey estimates that 14.6% of
+  Americans live below the poverty line, 20.7% speak a language other than English (foreign language) at home, and
+  4.2% fall into both categories.
+
+> (a). Are living below the poverty line and speaking a foreign language at home disjoint? <br />
+  No because 4.2 of people in poverty speak a different language.
+
+> (b). Draw a Venn diagram summarizing the variables and their associated probabilities. Note, this venn diagram uses
+  the sum of the contents to give the amount of the circles.
+
+```{r}
+# install.packages('VennDiagram')
+library(VennDiagram)
+
+grid.newpage()
+draw.pairwise.venn(area1 = 14.6, area2 = 20.7, cross.area = 4.2,
+                   category = c("Living below the Poverty Line", "Speak a Forign Language"), 
+                   lty = rep("blank", 2), fill = c("#6495ED", "#ffb84d"), 
+                   alpha = rep(0.5, 2), cat.pos = c(0,  0), cat.dist = rep(0.025, 2))
+
+```
+
+> (c). What percent of Americans live below the poverty line and only speak English at home? <br />
+        10.4% of Americans live below the poverty line.
+
+> (d). What percent of Americans live below the poverty line or speak a foreign language at home?
+
+```{r}
+print(paste((.104 + .042 + .165) * 100, "%" ))
+```
+
+> (e). What percent of Americans live above the poverty line and only speak English at home? <br />
+  
+```{r}
+print(paste((1 - (.104 + .042 + .165)) * 100, "%" ))
+```
+
+> (f). Is the event that someone lives below the poverty line independent of the event that the person speaks a
+  foreign language at home?
+
+```{r}
+  .207 * .146 * 100
+```
+
+> Poverty) P(OtherLang) = P(20.7%) P(14.6%) = 3.0222% \ 3.0222% < 4.2%
+
+> Therefore, poverty is not randomly associated with language.
+
+
+## 2.20 Assortative mating.
+
+> Assortative mating is a nonrandom mating pattern where individuals with similar genotypes and/or phenotypes mate with one another more frequently than what would be expected under a random mating pattern. Researchers studying this topic collected data on eye colors of 204 Scandinavian men and their female partners. The table below summarizes the results. For simplicity, we only include heterosexual relationships in this exercise.
+
+
+```{r}
+library(knitr)
+Male <- c("Blue", "Brown", "Green")
+Blue <- c(78, 19, 11)
+Brown <- c(23,23,9)
+Green <- c(13,12,16)
+df = data.frame(Blue, Brown, Green, row.names = Male) # Do not incldue Male yet:
+df$Totals <- apply(df, 1, sum)
+df["Total" ,] <- colSums(df)
+kable(df)
+```
+
+> (a). What is the probability that a randomly chosen male respondent or his partner has blue eyes?
+
+```{r}
+ans <-  df["Total", "Blue"] + df["Blue", "Totals"] - df["Blue", "Blue"] # Need to subtact blue blue because it would be double counted.
+ans
+ans / df["Total", "Totals"]
+```
+
+> (b). What is the probability that a randomly chosen male respondent with blue eyes has a partner with blue eyes?
+
+```{r}
+df["Blue", "Blue"]/df["Blue", "Totals"]
+```
+
+> (c). What is the probability that a randomly chosen male respondent with brown eyes has a partner with blue eyes? What about the probability of a randomly chosen male respondent with green eyes having a partner with blue eyes?
+
+```{r}
+df["Brown", "Blue"]/ df["Brown", "Totals"]
+df["Green", "Blue"]/ df["Green", "Totals"]
+```
+
+> (d). Does it appear that the eye colors of male respondents and their partners are independent? Explain your reasoning. <br />
+
+> They appear to be dependent because: <br />
+  P(FemBlue | MaleBlue) <> P(FemBlue)
+
+  (78 / 114) <> (108 / 204)
+  
+```{r}
+all.equal(78/114, 108/204)
+
+a <- 78/114
+b <- 108/204
+identical(a,b)
+```
+  
+## 2.3 Books on a bookshelf.
+
+> The table below shows the distribution of books on a bookcase based on whether they are nonfiction or fiction and hardcover or paperback.
+
+```{r}
+type <- c("Fiction", "Non_Fiction")
+HardCov <- c(13, 15)
+PapBack <- c(59, 8)
+df <- data.frame(HardCov, PapBack, row.names = type) 
+df$Total <- apply(df, 1, sum)
+df["Total" ,] <- colSums(df)
+kable(df)
+```
+
+> (a). Find the probability of drawing a hardcover book first then a paperback fiction book second when drawing without replacement.
+
+```{r}
+findProb <- function(x){
+  percent = round(x*100, 3)
+  print(paste("The probability of this happening is", percent, "%" ))
+}
+
+ans <- (df["Total","HardCov"]/df["Total","Total"] ) * (df["Fiction", "PapBack"]/(df["Total","Total"]-1))
+findProb(ans)
+```
+
+> (b). Determine the probability of drawing a fiction book first and then a hardcover book second, when drawing without replacement.
+
+```{r}
+a <- (df["Fiction","Total"]/df["Total","Total"] ) * (df["Total", "HardCov"]/(df["Total","Total"]-1))
+ findProb(a)
+ b  <- (df["Fiction","Total"]/df["Total","Total"] ) * ((df["Total", "HardCov"]-1)/(df["Total","Total"]-1))
+findProb(b)
+```
+
+> The two answers depend on wethere or not the first book was hardcover or not.
+
+> (c). Calculate the probability of the scenario in part (b), except this time complete the calculations under the scenario where the first book is placed back on the bookcase before randomly drawing the second book.
+
+```{r}
+a <- (df["Fiction","Total"]/df["Total","Total"] ) * (df["Total", "HardCov"]/(df["Total","Total"]))
+ findProb(a)
+```
+
+> (d). The final answers to parts (b) and (c) are very similar. Explain why this is the case. This is the case because adding replacement only amounted to a -1.05 % change and is not large enough to effect the answer much.
+
+## 2.38 Baggage fees.
+
+> An airline charges the following baggage fees: $25 for the first bag and $35 for the second. Suppose 54% of passengers have no checked luggage, 34% have one piece of checked luggage and 12% have two pieces. We suppose a negligible portion of people check more than two bags.
+
+> (a). Build a probability model, compute the average revenue per passenger, and compute the corresponding standard deviation.
+
+> Expected value:
+
+```{r}
+bags <- c(0,1,2)
+cost <- c(0,25,35+25)
+percent <- c(.54, .34, .12)
+baggagefees <- data.frame(bags, cost, percent)
+baggagefees
+
+#compute expected value
+Avgrev <- sum(cost * percent)
+Avgrev
+
+```
+
+> The average revenue per customer is $15.70.
+
+```{r}
+#compute variance
+variability <- ((cost - Avgrev)^2) * percent
+totalvar <- sum(variability)
+totalvar
+```
+
+```{r}
+#compute standard deviation (square root of variance)
+sd <- round(sqrt(totalvar),2)
+sd
+```
+
+> The standard deviation is 19.95
+
+> (b). About how much revenue should the airline expect for a flight of 120 passengers? With what standard deviation? Note any assumptions you make and if you think they are justified.
+
+```{r}
+expectedrev <- Avgrev * 120
+expectedrev
+```
+
+> The expected revenue for 120 passengers is $1884.
+
+```{r}
+var120 <- (120 * sd^2)
+var120
+
+sd120 <- round(sqrt(var120),2)
+sd120
+```
+
+> The standard deviation for the expected revenue of 120 passengers is 218.54
+
+## 2.44 Income and gender.
+
+> The relative frequency table below displays the distribution of annual total personal income (in 2009 inflation-adjusted dollars) for a representative sample of 96,420,486 Americans. These data come from the American Community Survey for 2005-2009. This sample is comprised of 59% males and 41% females.
+
+```{r}
+strata <- c("$1 to $9,999 or less", "$10,000 to $14,999", "$15,000 to $24,999",
+          "$25,000 to $34,999", "$35,000 to $49,999", "$50,000 to $64,999", 
+          "$65,000 to $74,999", "$75,000 to $99,999", "$100,000 or more")
+strataPercent <- c(.022, .047, .158, .183, .212, .139, .058, .084, 0.097)
+
+df1 <- data.frame(strata, strataPercent )
+df1$strata <- factor(df1$strata, levels = df1$strata) # Necessary so that ggplot does not 
+#reorder the graph.
+kable(df1)
+```
+
+> (a). Describe the distribution of total personal income.
+
+```{r}
+library(ggplot2)
+library(ggthemes)
+
+p <- ggplot(data = df1, aes(strata, strataPercent)) + geom_bar(stat = "identity")  + theme_economist() + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+p
+```
+
+> Income looks normally distributed but it increases towrards the end.
+
+> (b). What is the probability that a randomly chosen US resident makes less than $50,000 per year?
+
+```{r}
+ans <- sum(df1[1:5, 2])
+findProb(ans)
+```
+
+> The probability of less that 50,000 is 62.2%.
+
+> (c). What is the probability that a randomly chosen US resident makes less than $50,000 per year and is female? Note any assumptions you make.
+
+```{r}
+lessfem <- ans * .41
+findProb(lessfem)
+```
+
+> (d). The same data source indicates that 71.8% of females make less than $50,000 per year. Use this value to determine whether or not the assumption you made in part (c) is valid.
+
+> Part c is looking at the likelyhood of a random person being both female and in the sub 50k strata. Part d) is looking at the actual distrobution. To compare apples to apples we can solve:
+
+```{r}
+x <- .41*.718
+findProb(x)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<br />
+
+<br />
+<br />
+<br />
+<br />
+
+> *Please email to: * <a href="mailto:kleber.perez@live.com">kleber.perez@live.com</a> *for any suggestion.*
+
+<br />
+
+<footer class="border-top text-muted fixed-bottom">
+
+        ** DATA606 Homework 2 - MSDS 2019 Program.
+
+</footer>
+
+\textbf{Text ignored: END of other links}
+
+
+
+
